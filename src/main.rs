@@ -17,13 +17,18 @@ struct Args {
 }
 
 fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
-    let mut command_split = args.command.split_whitespace();
+    let mut command_split = args.command.split("'");
+    let mut before_block = command_split.next().unwrap().split_whitespace();
+    let mut block = ["'", command_split.next().unwrap(), "'"].concat();
+    let mut block = block.split_whitespace().peekable();
+    let mut after_block = command_split.next().unwrap().split_whitespace();
+    let mut block_mod = String::from("");
     let mut rm_handle = Command::new("efibootmgr");
-    let mut create_handle = Command::new(command_split.next().unwrap());
+    let mut create_handle = Command::new(before_block.next().unwrap());
     rm_handle.arg("-b")
         .arg(&args.bootnum)
         .arg("-B");
-    for word in command_split {
+    for word in before_block {
         if word.contains("!VERSION") {
             let word_mod = word.replace("!VERSION", vnum);
 
@@ -34,6 +39,34 @@ fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
             create_handle.arg(word);
         }
     }
+    while let Some(word) = block.next() {
+        if word.contains("!VERSION") {
+            let word_mod = word.replace("!VERSION", vnum);
+
+            block_mod.push_str(&word_mod);
+        }
+
+        else {
+            block_mod.push_str(word);
+        }
+        if block.peek().is_some() {
+            block_mod.push_str(" ");
+        }
+    }
+    block_mod = block_mod.replace("'", "");
+    create_handle.arg(block_mod);
+    for word in after_block {
+        if word.contains("!VERSION") {
+            let word_mod = word.replace("!VERSION", vnum);
+
+            create_handle.arg(word_mod);
+        }
+
+        else {
+            create_handle.arg(word);
+        }
+    }
+
     rm_handle.spawn().unwrap();
     sleep(Duration::from_secs(1));
     create_handle.spawn().unwrap();
