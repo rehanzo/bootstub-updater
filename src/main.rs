@@ -37,7 +37,6 @@ fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
     rm_handle.spawn().unwrap();
     sleep(Duration::from_secs(1));
     create_handle.spawn().unwrap();
-
     Ok(())
 }
 
