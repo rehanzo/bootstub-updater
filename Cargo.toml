@@ -1,0 +1,11 @@
+[package]
+name = "efibootstub-updater"
+version = "0.1.0"
+authors = ["Rehan Rana <rehanalirana@tuta.io>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+notify = "4.0.15"
+clap = "3.0.0-beta.1"
