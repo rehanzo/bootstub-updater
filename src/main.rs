@@ -13,7 +13,7 @@ struct Args {
         short,
         long,
         value_name = "COMMAND",
-        about = "Specify command to be run when linux kernel is updated. Place !VERSION where kernel version should be",
+        about = "Specify command to be run when linux kernel is updated. Place \"%v\" where kernel version should be",
         required = true
     )]
     command: String,
@@ -37,14 +37,14 @@ fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
     rm_handle.arg("-b").arg(&args.bootnum).arg("-B");
     for block in command_split {
         if sing_quote_switch {
-            create_handle.arg(block.replace("!VERSION", vnum));
+            create_handle.arg(block.replace("%v", vnum));
         } else {
             for word in block.split_whitespace() {
                 if first_run {
                     first_run = false;
                     create_handle = Command::new(word);
                 } else {
-                    create_handle.arg(word.replace("!VERSION", vnum));
+                    create_handle.arg(word.replace("%v", vnum));
                 }
             }
         }
@@ -52,6 +52,7 @@ fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
     }
 
     rm_handle.spawn().unwrap();
+    //the remove and add command seem like they run in random order without sleeping
     sleep(Duration::from_secs(1));
     println!("COMMAND = {:?}", create_handle);
     create_handle.spawn().unwrap();
