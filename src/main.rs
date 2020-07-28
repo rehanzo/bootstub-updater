@@ -18,57 +18,35 @@ struct Args {
 
 fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
     let mut command_split = args.command.split("'");
-    let mut before_block = command_split.next().unwrap().split_whitespace();
-    let mut block = ["'", command_split.next().unwrap(), "'"].concat();
-    let mut block = block.split_whitespace().peekable();
-    let mut after_block = command_split.next().unwrap().split_whitespace();
     let mut block_mod = String::from("");
     let mut rm_handle = Command::new("efibootmgr");
-    let mut create_handle = Command::new(before_block.next().unwrap());
+    let mut create_handle = Command::new("");
+    let mut first_run = true;
+    let mut sing_quote_switch = false;
     rm_handle.arg("-b")
         .arg(&args.bootnum)
         .arg("-B");
-    for word in before_block {
-        if word.contains("!VERSION") {
-            let word_mod = word.replace("!VERSION", vnum);
-
-            create_handle.arg(word_mod);
+    for block in command_split {
+        if sing_quote_switch {
+            create_handle.arg(block.replace("!VERSION", vnum));
         }
-
         else {
-            create_handle.arg(word);
+            for word in block.split_whitespace() {
+                if first_run {
+                    first_run = false;
+                    create_handle = Command::new(word);
+                }
+                else {
+                    create_handle.arg(word.replace("!VERSION", vnum));
+                }
+            }
         }
-    }
-    while let Some(word) = block.next() {
-        if word.contains("!VERSION") {
-            let word_mod = word.replace("!VERSION", vnum);
-
-            block_mod.push_str(&word_mod);
-        }
-
-        else {
-            block_mod.push_str(word);
-        }
-        if block.peek().is_some() {
-            block_mod.push_str(" ");
-        }
-    }
-    block_mod = block_mod.replace("'", "");
-    create_handle.arg(block_mod);
-    for word in after_block {
-        if word.contains("!VERSION") {
-            let word_mod = word.replace("!VERSION", vnum);
-
-            create_handle.arg(word_mod);
-        }
-
-        else {
-            create_handle.arg(word);
-        }
+        sing_quote_switch = !sing_quote_switch;
     }
 
     rm_handle.spawn().unwrap();
     sleep(Duration::from_secs(1));
+    println!("COMMAND = {:?}", create_handle); 
     create_handle.spawn().unwrap();
     Ok(())
 }
@@ -92,10 +70,10 @@ fn watch(args: Args) -> notify::Result<()> {
         match rx.recv() {
             Ok(event) => {
                 if let DebouncedEvent::Create(path) = event {
-                    let path = path.file_name().unwrap();
-                    let path = path.to_str().unwrap();
-                    if path.contains("vmlinuz") {
-                        vnum = &path[8..];
+                    let file_name = path.file_name().unwrap();
+                    let file_name = path.to_str().unwrap();
+                    if file_name.contains("vmlinuz") {
+                        vnum = &file_name[8..];
                         run_command(vnum, &args).unwrap();
 
                     }
