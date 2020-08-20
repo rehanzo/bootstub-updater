@@ -5,6 +5,9 @@ use std::process::Command;
 use std::sync::mpsc::channel;
 use std::thread::sleep;
 use std::time::Duration;
+use std::env;
+use std::str;
+use efibootstub_updater::Version;
 
 #[derive(Clap)]
 #[clap(about = "Updates efibootstub when linux kernel is updated")]
@@ -28,7 +31,7 @@ struct Args {
     bootnum: String,
 }
 
-fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
+fn run_command(vnum: &str, args: &Args, debug: bool) -> Result<(), Box<dyn Error>> {
     let command_split = args.command.split("'");
     let mut rm_handle = Command::new("efibootmgr");
     let mut create_handle = Command::new("");
@@ -51,10 +54,11 @@ fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
         sing_quote_switch = !sing_quote_switch;
     }
 
-    rm_handle.spawn().unwrap();
+    if !debug {
+        rm_handle.spawn().unwrap();
+    }
     //the remove and add command seem like they run in random order without sleeping
     sleep(Duration::from_secs(1));
-    println!("COMMAND = {:?}", create_handle);
     create_handle.spawn().unwrap();
     Ok(())
 }
@@ -62,6 +66,7 @@ fn run_command(vnum: &str, args: &Args) -> Result<(), Box<dyn Error>> {
 fn watch(args: Args) -> notify::Result<()> {
     // Create a channel to receive the events.
     let (tx, rx) = channel();
+    let debug = env::var("EFI_DBG").is_ok();
 
     // Automatically select the best implementation for your platform.
     // You can also access each implementation directly e.g. INotifyWatcher.
@@ -69,7 +74,11 @@ fn watch(args: Args) -> notify::Result<()> {
 
     // Add a path to be watched. All files and directories at that path and
     // below will be monitored for changes.
-    watcher.watch("/boot", RecursiveMode::Recursive).unwrap();
+    if !debug {
+        watcher.watch("/boot", RecursiveMode::Recursive).unwrap();
+    } else {
+        watcher.watch("/home/rehan/Downloads/test", RecursiveMode::Recursive).unwrap();
+    }
 
     // This is a simple loop, but you may want to use more complex logic here,
     // for example to handle I/O.
@@ -81,12 +90,25 @@ fn watch(args: Args) -> notify::Result<()> {
                     let file_name = path.file_name().unwrap();
                     let file_name = file_name.to_str().unwrap();
                     if file_name.contains("vmlinuz") {
-                        vnum = &file_name[8..];
-                        run_command(vnum, &args).unwrap();
+                        let mut uname = Command::new("echo");
+                        uname.arg("5.7.15");
+                        let mut uname = uname.output().unwrap();
+                        //for some reason there is an additional element at the end of the stdout
+                        //output that messes everything up, so we gotta pop it
+                        uname.stdout.pop();
+                        let curr_version = String::from_utf8(uname.stdout.clone()).unwrap();
+
+                        let curr_version = Version::new(String::from(curr_version));
+                        let new_version = Version::new(String::from(file_name));
+
+                        if new_version > curr_version {
+                            vnum = &file_name[8..];
+                            run_command(vnum, &args, debug).unwrap();
+                        }
                     }
                 }
             }
-            Err(e) => println!("{:?}", e),
+            Err(e) => eprintln!("{:?}", e),
         }
     }
 }
@@ -94,6 +116,6 @@ fn watch(args: Args) -> notify::Result<()> {
 fn main() {
     let args: Args = Args::parse();
     if let Err(e) = watch(args) {
-        println!("error: {:?}", e)
+        eprintln!("error: {:?}", e)
     }
 }
