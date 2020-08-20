@@ -29,6 +29,15 @@ struct Args {
         required = true
     )]
     bootnum: String,
+
+    #[clap(
+        short,
+        long,
+        value_name = "FILENAME",
+        about = "Provide an example of the naming format your distro follows, replacing the verison number with %v. Ex. vmlinuz-%v",
+        required = true
+        )]
+    format: String,
 }
 
 fn run_command(vnum: &str, args: &Args, debug: bool) -> Result<(), Box<dyn Error>> {
@@ -90,19 +99,19 @@ fn watch(args: Args) -> notify::Result<()> {
                     let file_name = path.file_name().unwrap();
                     let file_name = file_name.to_str().unwrap();
                     if file_name.contains("vmlinuz") {
-                        let mut uname = Command::new("echo");
-                        uname.arg("5.7.15");
+                        let mut uname = Command::new("uname");
+                        uname.arg("-r");
                         let mut uname = uname.output().unwrap();
                         //for some reason there is an additional element at the end of the stdout
                         //output that messes everything up, so we gotta pop it
                         uname.stdout.pop();
                         let curr_version = String::from_utf8(uname.stdout.clone()).unwrap();
 
-                        let curr_version = Version::new(String::from(curr_version));
-                        let new_version = Version::new(String::from(file_name));
+                        let curr_version = Version::new(String::from(curr_version), args.format.clone(), false);
+                        let new_version = Version::new(String::from(file_name), args.format.clone(), true);
 
                         if new_version > curr_version {
-                            vnum = &file_name[8..];
+                            vnum = &new_version.string;
                             run_command(vnum, &args, debug).unwrap();
                         }
                     }
