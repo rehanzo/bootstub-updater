@@ -82,6 +82,7 @@ fn run_command(vnum: &str, args: &Args, debug: bool) -> Result<(), Box<dyn Error
     Ok(())
 }
 
+///watches directory for changes
 fn watch(args: Args) -> notify::Result<()> {
     let (tx, rx) = channel();
     //set environment variable EFI_DBG to get debug mode going

@@ -1,8 +1,3 @@
-pub enum VersionInfo {
-    num(String),
-    filename(String, String),
-}
-
 #[derive(Debug, PartialOrd, PartialEq)]
 ///Struct contains version information, the string field
 pub struct Version {
@@ -15,7 +10,8 @@ pub struct Version {
 
 impl Version {
     ///version_str - string that contains version number
-    ///format - example of system kernel versioning. If version str is just the versioning, 
+    ///format - example of system kernel versioning. If version_str is just the versioning, then
+    ///         this will be None. If it is a filename, this will be a Some. 
     pub fn new(version_str: String, format: Option<&str>) -> Self {
         let mut version_str_split = version_str.split(|x| (x == '.') || (x == '-') || (x == '_'));
         let mut nums: Vec<u32> = vec![];
