@@ -7,7 +7,9 @@ use std::thread::sleep;
 use std::time::Duration;
 use std::env;
 use std::str;
-use efibootstub_updater::Version;
+use version::Version;
+
+mod version;
 
 #[derive(Clap)]
 #[clap(about = "Updates efibootstub when linux kernel is updated")]
@@ -40,6 +42,11 @@ struct Args {
     format: String,
 }
 
+///Runs the commands for deleting the boot entry and adding a new one
+///
+///vnum - the version portion of the linux kernel file name
+///args - struct with cli arguments
+///debug - true if in debug mode, false otherwise
 fn run_command(vnum: &str, args: &Args, debug: bool) -> Result<(), Box<dyn Error>> {
     let command_split = args.command.split("'");
     let mut rm_handle = Command::new("efibootmgr");
@@ -48,6 +55,9 @@ fn run_command(vnum: &str, args: &Args, debug: bool) -> Result<(), Box<dyn Error
     let mut sing_quote_switch = false;
     rm_handle.arg("-b").arg(&args.bootnum).arg("-B");
     for block in command_split {
+        //sing_quote_switch is used to determine if something was sent in with single quotes so
+        //that the entire block within the single quotes can be sent in as one argument, vs sending
+        //in single words from the argument in the quotes
         if sing_quote_switch {
             create_handle.arg(block.replace("%v", vnum));
         } else {
@@ -73,46 +83,41 @@ fn run_command(vnum: &str, args: &Args, debug: bool) -> Result<(), Box<dyn Error
 }
 
 fn watch(args: Args) -> notify::Result<()> {
-    // Create a channel to receive the events.
     let (tx, rx) = channel();
+    //set environment variable EFI_DBG to get debug mode going
     let debug = env::var("EFI_DBG").is_ok();
 
-    // Automatically select the best implementation for your platform.
-    // You can also access each implementation directly e.g. INotifyWatcher.
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(2)).unwrap();
 
-    // Add a path to be watched. All files and directories at that path and
-    // below will be monitored for changes.
     if !debug {
-        watcher.watch("/boot", RecursiveMode::Recursive).unwrap();
+        watcher.watch("/boot", RecursiveMode::Recursive).expect("Error in watching directory");
     } else {
-        watcher.watch("/home/rehan/Downloads/test", RecursiveMode::Recursive).unwrap();
+        watcher.watch("/home/rehan/Downloads/test", RecursiveMode::Recursive).expect("Error in watching directory");
     }
 
-    // This is a simple loop, but you may want to use more complex logic here,
-    // for example to handle I/O.
     loop {
-        let vnum: &str;
         match rx.recv() {
             Ok(event) => {
+                //if file is created in watched directory
                 if let DebouncedEvent::Create(path) = event {
                     let file_name = path.file_name().unwrap();
                     let file_name = file_name.to_str().unwrap();
                     if file_name.contains("vmlinuz") {
                         let mut uname = Command::new("uname");
                         uname.arg("-r");
-                        let mut uname = uname.output().unwrap();
+                        let mut uname = uname.output().expect("Failed to extract output from uname");
                         //for some reason there is an additional element at the end of the stdout
                         //output that messes everything up, so we gotta pop it
                         uname.stdout.pop();
-                        let curr_version = String::from_utf8(uname.stdout.clone()).unwrap();
+                        let curr_version = String::from_utf8(uname.stdout).unwrap();
 
-                        let curr_version = Version::new(String::from(curr_version), args.format.clone(), false);
-                        let new_version = Version::new(String::from(file_name), args.format.clone(), true);
+                        let curr_version = Version::new(String::from(curr_version), None);
+                        let new_version = Version::new(String::from(file_name), Some(&args.format));
 
                         if new_version > curr_version {
-                            vnum = &new_version.string;
-                            run_command(vnum, &args, debug).unwrap();
+                            if let Err(e) = run_command(&new_version.string, &args, debug) {
+                                eprintln!("{}", e);
+                            }
                         }
                     }
                 }
