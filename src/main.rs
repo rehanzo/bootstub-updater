@@ -8,10 +8,13 @@ use std::time::Duration;
 use std::env;
 use std::str;
 use version::Version;
+use serde::{Deserialize, Serialize};
+use std::fs::{ File, canonicalize };
+use std::io::Read;
 
 mod version;
 
-#[derive(Clap)]
+#[derive(Clap, Serialize, Deserialize, Clone, Debug)]
 #[clap(about = "Updates efibootstub when linux kernel is updated")]
 struct Args {
     #[clap(
@@ -19,27 +22,37 @@ struct Args {
         long,
         value_name = "COMMAND",
         about = "Specify command to be run when linux kernel is updated. Place \"%v\" where kernel version should be",
-        required = true
+        required_unless = "path"
     )]
-    command: String,
+    command: Option<String>,
 
     #[clap(
         short,
         long,
         value_name = "NUM",
         about = "Specify bootnum of entry to be replaced",
-        required = true
+        required_unless = "path"
     )]
-    bootnum: String,
+    bootnum: Option<String>,
 
     #[clap(
         short,
         long,
         value_name = "FILENAME",
         about = "Provide an example of the naming format your distro follows, replacing the verison number with %v. Ex. vmlinuz-%v",
-        required = true
+        required_unless = "path"
         )]
-    format: String,
+    format: Option<String>,
+
+    #[clap(
+        name = "path",
+        short = "p",
+        long = "path",
+        value_name = "PATH",
+        about = "Specify location of a TOML formatted file containing arguments for the program",
+        )]
+    #[serde(skip)]
+    config_location: Option<String>
 }
 
 ///Runs the commands for deleting the boot entry and adding a new one
@@ -47,13 +60,14 @@ struct Args {
 ///vnum - the version portion of the linux kernel file name
 ///args - struct with cli arguments
 ///debug - true if in debug mode, false otherwise
-fn run_command(vnum: &str, args: &Args, debug: bool) -> Result<(), Box<dyn Error>> {
-    let command_split = args.command.split("'");
+fn run_command(vnum: &str, args: Args, debug: bool) -> Result<(), Box<dyn Error>> {
+    let command_split = args.command.unwrap();
+    let command_split = command_split.split("'");
     let mut rm_handle = Command::new("efibootmgr");
     let mut create_handle = Command::new("");
     let mut first_run = true;
     let mut sing_quote_switch = false;
-    rm_handle.arg("-b").arg(&args.bootnum).arg("-B");
+    rm_handle.arg("-b").arg(&args.bootnum.unwrap()).arg("-B");
     for block in command_split {
         //sing_quote_switch is used to determine if something was sent in with single quotes so
         //that the entire block within the single quotes can be sent in as one argument, vs sending
@@ -113,10 +127,10 @@ fn watch(args: Args) -> notify::Result<()> {
                         let curr_version = String::from_utf8(uname.stdout).unwrap();
 
                         let curr_version = Version::new(String::from(curr_version), None);
-                        let new_version = Version::new(String::from(file_name), Some(&args.format));
+                        let new_version = Version::new(String::from(file_name), Some(args.format.clone().unwrap()));
 
                         if new_version > curr_version {
-                            if let Err(e) = run_command(&new_version.string, &args, debug) {
+                            if let Err(e) = run_command(&new_version.string, args.clone(), debug) {
                                 eprintln!("{}", e);
                             }
                         }
@@ -128,8 +142,34 @@ fn watch(args: Args) -> notify::Result<()> {
     }
 }
 
+fn config_parse(config_location: &str) -> Result<Args, Box<dyn Error>> {
+    let config_location = canonicalize(config_location).expect("Failed to canonicalize, check file path");
+    let config_location = config_location.to_str().unwrap();
+    
+    let file = File::open(config_location);
+
+    if file.is_err() {
+        return Err(format!("File not found at {}",config_location).into());
+    }
+    let mut file = file.unwrap();
+
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+
+    let args_string = toml::from_str(contents.as_str());
+    let args_serialized: Args = args_string?;
+    Ok(args_serialized)
+}
+
 fn main() {
-    let args: Args = Args::parse();
+    let mut args: Args = Args::parse();
+        
+    if let Some(config_location) = &args.config_location {
+        match config_parse(config_location) {
+            Err(e) => eprintln!("{}", e),
+            Ok(s) => args = s,
+        }
+    }
     if let Err(e) = watch(args) {
         eprintln!("error: {:?}", e)
     }
