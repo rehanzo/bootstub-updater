@@ -1,8 +1,14 @@
 [package]
-name = "efibootstub-updater"
-version = "0.1.0"
-authors = ["Rehan Rana <rehanalirana@tuta.io>"]
+name = "bootstub-updater"
+version = "1.0.0"
+authors = ["RAR27 <rehanalirana@tuta.io>"]
 edition = "2018"
+license = "GPL-3.0-or-later"
+description = "Automatically updates efibootstub when kernel is updated"
+repository = "https://github.com/RAR27/bootstub-updater"
+readme = "README.md"
+keywords = ["efi", "kernel", "bootstub"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
