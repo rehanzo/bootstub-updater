@@ -1,4 +1,4 @@
-use clap::Clap;
+use structopt::StructOpt;
 use notify::{DebouncedEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use std::error::Error;
 use std::process::Command;
@@ -14,10 +14,10 @@ use std::io::Read;
 
 mod version;
 
-#[derive(Clap, Serialize, Deserialize, Clone, Debug)]
-#[clap(about = "Updates efibootstub when linux kernel is updated")]
+#[derive(StructOpt, Serialize, Deserialize, Clone, Debug)]
+#[structopt(about = "Updates efibootstub when linux kernel is updated")]
 struct Args {
-    #[clap(
+    #[structopt(
         short,
         long,
         value_name = "COMMAND",
@@ -26,7 +26,7 @@ struct Args {
     )]
     command: Option<String>,
 
-    #[clap(
+    #[structopt(
         short,
         long,
         value_name = "NUM",
@@ -35,7 +35,7 @@ struct Args {
     )]
     bootnum: Option<String>,
 
-    #[clap(
+    #[structopt(
         short,
         long,
         value_name = "FILENAME",
@@ -44,7 +44,7 @@ struct Args {
         )]
     format: Option<String>,
 
-    #[clap(
+    #[structopt(
         name = "path",
         short = "p",
         long = "path",
@@ -58,16 +58,17 @@ struct Args {
 ///Runs the commands for deleting the boot entry and adding a new one
 ///
 ///vnum - the version portion of the linux kernel file name
-///args - struct with cli arguments
+///bootnum - bootnum to remove from efibootmgr
+///command - command to run to create new boot entry
 ///debug - true if in debug mode, false otherwise
-fn run_command(vnum: &str, args: Args, debug: bool) -> Result<(), Box<dyn Error>> {
-    let command_split = args.command.unwrap();
+fn run_command(vnum: &str, bootnum: &str, command: &str, debug: bool) -> Result<(), Box<dyn Error>> {
+    let command_split = command;
     let command_split = command_split.split("'");
     let mut rm_handle = Command::new("efibootmgr");
     let mut create_handle = Command::new("");
     let mut first_run = true;
     let mut sing_quote_switch = false;
-    rm_handle.arg("-b").arg(&args.bootnum.unwrap()).arg("-B");
+    rm_handle.arg("-b").arg(&bootnum).arg("-B");
     for block in command_split {
         //sing_quote_switch is used to determine if something was sent in with single quotes so
         //that the entire block within the single quotes can be sent in as one argument, vs sending
@@ -109,6 +110,9 @@ fn watch(args: Args) -> notify::Result<()> {
     } else {
         watcher.watch("/home/rehan/Downloads/test", RecursiveMode::Recursive).expect("Error in watching directory");
     }
+    let format = args.format.expect("Missing argument: format");
+    let bootnum = args.bootnum.expect("Missing argument: bootnum");
+    let command = args.command.expect("Missing argument: command");
 
     loop {
         match rx.recv() {
@@ -127,10 +131,10 @@ fn watch(args: Args) -> notify::Result<()> {
                         let curr_version = String::from_utf8(uname.stdout).unwrap();
 
                         let curr_version = Version::new(String::from(curr_version), None);
-                        let new_version = Version::new(String::from(file_name), Some(args.format.clone().unwrap()));
+                        let new_version = Version::new(String::from(file_name), Some(&format));
 
                         if new_version > curr_version {
-                            if let Err(e) = run_command(&new_version.string, args.clone(), debug) {
+                            if let Err(e) = run_command(&new_version.string, &bootnum, &command, debug) {
                                 eprintln!("{}", e);
                             }
                         }
@@ -162,7 +166,7 @@ fn config_parse(config_location: &str) -> Result<Args, Box<dyn Error>> {
 }
 
 fn main() {
-    let mut args: Args = Args::parse();
+    let mut args: Args = Args::from_args();
         
     if let Some(config_location) = &args.config_location {
         match config_parse(config_location) {
