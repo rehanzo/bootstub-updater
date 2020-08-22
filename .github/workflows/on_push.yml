@@ -1,4 +1,4 @@
-name: Test and build dyn-wall-rs for Linux and Windows  
+name: Test and build bootstub-updater for Linux  
 on: push
         
 jobs:
