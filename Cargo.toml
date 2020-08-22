@@ -14,6 +14,6 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 notify = "4.0.15"
-clap = "3.0.0-beta.1"
 serde = { version = "1.0.114", features = ["derive"] }
 toml = "0.5"
+structopt = "0.3.15"
