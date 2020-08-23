@@ -41,16 +41,19 @@ Before anything, figure out the command to create an efibootstub that boots your
     Enter full efibootmgr command to be run when kernel is updated, replacing the kernel version number with `%v`. Surround command with quotation marks.
     
   * **-b, --bootnum \<NUM>**\
-    Entry number of current entry in efibootmgr. Will be removed and replaced with the new one.
+    Entry number of current entry in `efibootmgr`. Will be removed and replaced with the new one.
 
-  * **-f, --format**\<FILENAME>**\
+  * **-f, --format \<FILENAME>**\
     Example of naming convention of kernel for your current distro. Replace version number with `%v`.\
     ex. `vmlinuz-%v`
     
-  * **-p, --path \<FILEPATH>**\
+  * **-t, --toml \<FILEPATH>**\
     Specify the location of a TOML file to configure the program through a config file. An example can be found [here](https://github.com/RAR27/bootstub-updater/blob/master/examples/config.toml).
+    
+  * **-k, --kernel-dir \<DIRECTORY>**/
+    Optional. If your kernel directory lies somewhere other than at `/boot`, specify it here.
   
 ### Config File
-bootstub-updater can also be configured through a config file. You can specify the location of the config file through the `--path` option.
+bootstub-updater can also be configured through a TOML-formatted config file. You can specify the location of the config file through the `--path` option.
 
-Through this config file, you can use the same configuration options as through the command line.
+Through this config file, you can use the same configuration options as through the command line. An example can be found [here](https://github.com/RAR27/bootstub-updater/blob/master/examples/config.toml).
