@@ -134,7 +134,7 @@ fn watch(args: Args) -> notify::Result<()> {
                             Ok(path) => { 
                                 ver_vec.push(Version::new(path.file_name().unwrap().to_str().unwrap(), &format));
                             },
-                            Err(e) => println!("{:?}", e),
+                            Err(e) => eprintln!("{:?}", e),
                         }
                     } 
 
