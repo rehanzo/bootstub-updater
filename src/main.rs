@@ -1,5 +1,5 @@
 use structopt::StructOpt;
-use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{DebouncedEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use std::error::Error;
 use std::process::Command;
 use std::sync::mpsc::channel;
@@ -123,20 +123,25 @@ fn watch(args: Args) -> notify::Result<()> {
 
     loop {
         match rx.recv() {
-            Ok(_) => {
-                let mut ver_vec: Vec<Version> = vec![];
-                for entry in glob(&format!("{}/*vmlinuz*", kernel_dir)).expect("Failed to read glob pattern") {
-                    match entry {
-                        Ok(path) => { 
-                            ver_vec.push(Version::new(path.file_name().unwrap().to_str().unwrap(), &format));
-                        },
-                        Err(e) => println!("{:?}", e),
-                    }
-                } 
+            Ok(event) => {
+                if let DebouncedEvent::NoticeRemove(_) = event {
+                    continue;
+                }
+                else {
+                    let mut ver_vec: Vec<Version> = vec![];
+                    for entry in glob(&format!("{}/*vmlinuz*", kernel_dir)).expect("Failed to read glob pattern") {
+                        match entry {
+                            Ok(path) => { 
+                                ver_vec.push(Version::new(path.file_name().unwrap().to_str().unwrap(), &format));
+                            },
+                            Err(e) => println!("{:?}", e),
+                        }
+                    } 
 
-                let max = ver_vec.into_iter().max().unwrap();
-                if let Err(e) = run_command(&max.string, &bootnum, &command, debug) {
-                    eprintln!("{}", e);
+                    let max = ver_vec.into_iter().max().unwrap();
+                    if let Err(e) = run_command(&max.string, &bootnum, &command, debug) {
+                        eprintln!("{}", e);
+                    }
                 }
             }
             Err(e) => eprintln!("{:?}", e),
