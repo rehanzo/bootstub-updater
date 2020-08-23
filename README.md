@@ -57,7 +57,7 @@ Before anything, figure out the command to create an efibootstub that boots your
   * **-t, --toml \<FILEPATH>**\
     Specify the location of a TOML file to configure the program through a config file. An example can be found [here](https://github.com/RAR27/bootstub-updater/blob/master/examples/config.toml).
     
-  * **-k, --kernel-dir \<DIRECTORY>**/
+  * **-k, --kernel-dir \<DIRECTORY>**\
     Optional. If your kernel directory lies somewhere other than at `/boot`, specify it here.
   
 ### Config File
