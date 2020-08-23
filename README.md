@@ -31,7 +31,7 @@ yay -S bootstub-updater
 **Looking for maintainer for the AUR package. Email me at rehanalirana@tuta.io if you are interested.**
 
 ### Manual
-  1. Download the latest binary from the [releases](RELEASES) page
+  1. Download the latest binary from the [releases](https://github.com/RAR27/bootstub-updater/releases) page
   2. (**Optional**) To ensure the file you downloaded is correct and was not tampered with, do the following:
       1. Download the respective `.sha256` file
       2. Run `sha256sum` on the `.tar.gz` file
