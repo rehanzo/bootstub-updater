@@ -43,12 +43,15 @@ Before anything, figure out the command to create an efibootstub that boots your
   * **-b, --bootnum \<NUM>**\
     Entry number of current entry in efibootmgr. Will be removed and replaced with the new one.
 
-  * **-f, --format**\<FILENAME>**\
+  * **-f, --format \<FILENAME>**\
     Example of naming convention of kernel for your current distro. Replace version number with `%v`.\
     ex. `vmlinuz-%v`
     
-  * **-p, --path \<FILEPATH>**\
+  * **-t, --toml \<FILEPATH>**\
     Specify the location of a TOML file to configure the program through a config file. An example can be found [here](https://github.com/RAR27/bootstub-updater/blob/master/examples/config.toml).
+    
+  * **-k, --kernel-dir \<DIRECTORY>**/
+    Optional. If your kernel directory lies somewhere other than at `/boot`, specify it here.
   
 ### Config File
 bootstub-updater can also be configured through a config file. You can specify the location of the config file through the `--path` option.
