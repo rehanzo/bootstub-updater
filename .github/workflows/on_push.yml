@@ -1,0 +1,38 @@
+name: Test and build bootstub-updater for Linux  
+on: push
+        
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        
+    steps:          
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: cargo test --verbose
+      
+  release-linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+          
+      - name: Build
+        run: cargo build --release
+        
+      - name: Copy binary over
+        run: cp target/release/bootstub-updater .
+        
+      - name: Pack into tarball
+        run: tar -czvf bootstub-updater.tar.gz bootstub-updater
+        
+      - name: Find sha265sum
+        run: sha256sum bootstub-updater.tar.gz > bootstub-updater.sha256
+          
+      - name: Upload Linux assets
+        uses: actions/upload-artifact@v2
+        with:
+          name: assets-linux
+          path: bootstub-updater-linux*

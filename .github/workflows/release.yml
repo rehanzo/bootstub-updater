@@ -1,0 +1,70 @@
+name: Test and build bootstub-updater for Linux and Windows  
+on:
+  push:
+    tags:
+      - "v*"
+        
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: cargo test --verbose
+      
+  release-linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+          
+      - name: Build
+        run: cargo build --release
+        
+      - name: Copy binary over
+        run: cp target/release/bootstub-updater .
+        
+      - name: Pack into tarball
+        run: tar -czvf bootstub-updater.tar.gz bootstub-updater
+        
+      - name: Find sha265sum
+        run: sha256sum bootstub-updater.tar.gz > bootstub-updater-linux.sha256
+        
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+        
+      - name: Upload Linux zip
+        id: upload-linux-zip 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: bootstup-updater-linux.tar.gz
+          asset_name: bootstub-updater-linux.tar.gz
+          asset_content_type: application/zip
+
+      - name: Upload Linux sha256
+        id: upload-linux-sha256
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: bootstub-updater-linux.sha256
+          asset_name: bootstub-updater-linux.sha256
+          asset_content_type: application/zip
