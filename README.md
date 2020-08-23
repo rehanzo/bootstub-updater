@@ -5,7 +5,7 @@
 [![Crates.io](https://img.shields.io/crates/v/bootstub-updater)](https://crates.io/crates/bootstub-updater)
 [![AUR](https://img.shields.io/aur/version/bootstub-updater)](https://aur.archlinux.org/packages/bootstub-updater/)
 
-A utility to allow you to very easily maintain your EFI bootstub\
+A utility to facilitate the maintenance of your EFI bootstub.\
  Written in rust.
 ## Introduction
 The aim of bootstub-updater is to simplify the process of maintaining a bootstub entry. After figuring out the command that creates a bootstub, you pretty much set it and forget it!
