@@ -41,7 +41,7 @@ Before anything, figure out the command to create an efibootstub that boots your
     Enter full efibootmgr command to be run when kernel is updated, replacing the kernel version number with `%v`. Surround command with quotation marks.
     
   * **-b, --bootnum \<NUM>**\
-    Entry number of current entry in efibootmgr. Will be removed and replaced with the new one.
+    Entry number of current entry in `efibootmgr`. Will be removed and replaced with the new one.
 
   * **-f, --format \<FILENAME>**\
     Example of naming convention of kernel for your current distro. Replace version number with `%v`.\
