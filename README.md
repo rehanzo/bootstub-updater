@@ -54,6 +54,6 @@ Before anything, figure out the command to create an efibootstub that boots your
     Optional. If your kernel directory lies somewhere other than at `/boot`, specify it here.
   
 ### Config File
-bootstub-updater can also be configured through a config file. You can specify the location of the config file through the `--path` option.
+bootstub-updater can also be configured through a TOML-formatted config file. You can specify the location of the config file through the `--path` option.
 
-Through this config file, you can use the same configuration options as through the command line.
+Through this config file, you can use the same configuration options as through the command line. An example can be found [here](https://github.com/RAR27/bootstub-updater/blob/master/examples/config.toml).
