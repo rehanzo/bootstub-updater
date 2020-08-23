@@ -60,7 +60,6 @@ struct Args {
         long = "kernel-dir",
         value_name = "PATH",
         about = "Specify location of the kernel",
-        required_unless = "toml",
         )]
     #[serde(rename = "kernel-dir")]
     kernel_dir: Option<String>
@@ -118,7 +117,7 @@ fn watch(args: Args) -> notify::Result<()> {
     let format = args.format.expect("Missing argument: format");
     let bootnum = args.bootnum.expect("Missing argument: bootnum");
     let command = args.command.expect("Missing argument: command");
-    let kernel_dir = args.kernel_dir.expect("Missing argument: kernel-dir");
+    let kernel_dir = args.kernel_dir.unwrap_or(String::from("/boot"));
 
     watcher.watch(&kernel_dir, RecursiveMode::Recursive).expect("Error in watching directory");
 
