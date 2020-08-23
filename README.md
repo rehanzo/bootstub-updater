@@ -23,6 +23,13 @@ To update after installation, run:
 cargo install bootstub-updater --force
 ```
 
+### AUR
+For those using Arch Linux you can find the package on the AUR [here](https://aur.archlinux.org/packages/bootstub-updater/). However, if you're using an AUR helper, the package can be installed through that. For example, If using [yay](https://github.com/Jguer/yay), run the following command:
+```
+yay -S bootstub-updater
+```
+**Looking for maintainer for the AUR package. Email me at rehanalirana@tuta.io if you are interested.**
+
 ### Manual
   1. Download the latest binary from the [releases](RELEASES) page
   2. (**Optional**) To ensure the file you downloaded is correct and was not tampered with, do the following:
