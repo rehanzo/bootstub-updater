@@ -1,5 +1,5 @@
 use structopt::StructOpt;
-use notify::{DebouncedEvent, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::error::Error;
 use std::process::Command;
 use std::sync::mpsc::channel;
@@ -11,6 +11,7 @@ use version::Version;
 use serde::{Deserialize, Serialize};
 use std::fs::{ File, canonicalize };
 use std::io::Read;
+use glob::glob;
 
 mod version;
 
@@ -119,33 +120,24 @@ fn watch(args: Args) -> notify::Result<()> {
     let command = args.command.expect("Missing argument: command");
     let kernel_dir = args.kernel_dir.expect("Missing argument: kernel-dir");
 
-    watcher.watch(kernel_dir, RecursiveMode::Recursive).expect("Error in watching directory");
+    watcher.watch(&kernel_dir, RecursiveMode::Recursive).expect("Error in watching directory");
 
     loop {
         match rx.recv() {
-            Ok(event) => {
-                //if file is created in watched directory
-                if let DebouncedEvent::Create(path) = event {
-                    let file_name = path.file_name().unwrap();
-                    let file_name = file_name.to_str().unwrap();
-                    if file_name.contains("vmlinuz") {
-                        let mut uname = Command::new("uname");
-                        uname.arg("-r");
-                        let mut uname = uname.output().expect("Failed to extract output from uname");
-                        //for some reason there is an additional element at the end of the stdout
-                        //output that messes everything up, so we gotta pop it
-                        uname.stdout.pop();
-                        let curr_version = String::from_utf8(uname.stdout).unwrap();
-
-                        let curr_version = Version::new(String::from(curr_version), None);
-                        let new_version = Version::new(String::from(file_name), Some(&format));
-
-                        if new_version > curr_version {
-                            if let Err(e) = run_command(&new_version.string, &bootnum, &command, debug) {
-                                eprintln!("{}", e);
-                            }
-                        }
+            Ok(_) => {
+                let mut ver_vec: Vec<Version> = vec![];
+                for entry in glob(&format!("{}/*vmlinuz*", kernel_dir)).expect("Failed to read glob pattern") {
+                    match entry {
+                        Ok(path) => { 
+                            ver_vec.push(Version::new(path.file_name().unwrap().to_str().unwrap(), &format));
+                        },
+                        Err(e) => println!("{:?}", e),
                     }
+                } 
+
+                let max = ver_vec.into_iter().max().unwrap();
+                if let Err(e) = run_command(&max.string, &bootnum, &command, debug) {
+                    eprintln!("{}", e);
                 }
             }
             Err(e) => eprintln!("{:?}", e),
