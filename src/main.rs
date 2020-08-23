@@ -22,7 +22,7 @@ struct Args {
         long,
         value_name = "COMMAND",
         about = "Specify command to be run when linux kernel is updated. Place \"%v\" where kernel version should be",
-        required_unless = "path"
+        required_unless = "toml"
     )]
     command: Option<String>,
 
@@ -31,7 +31,7 @@ struct Args {
         long,
         value_name = "NUM",
         about = "Specify bootnum of entry to be replaced",
-        required_unless = "path"
+        required_unless = "toml"
     )]
     bootnum: Option<String>,
 
@@ -40,19 +40,29 @@ struct Args {
         long,
         value_name = "FILENAME",
         about = "Provide an example of the naming format your distro follows, replacing the verison number with %v. Ex. vmlinuz-%v",
-        required_unless = "path"
+        required_unless = "toml"
         )]
     format: Option<String>,
 
     #[structopt(
-        name = "path",
-        short = "p",
-        long = "path",
+        name = "toml",
+        short = "t",
+        long = "toml",
         value_name = "PATH",
         about = "Specify location of a TOML formatted file containing arguments for the program",
         )]
     #[serde(skip)]
-    config_location: Option<String>
+    config_location: Option<String>,
+
+    #[structopt(
+        short = "k",
+        long = "kernel-dir",
+        value_name = "PATH",
+        about = "Specify location of the kernel",
+        required_unless = "toml",
+        )]
+    #[serde(rename = "kernel-dir")]
+    kernel_dir: Option<String>
 }
 
 ///Runs the commands for deleting the boot entry and adding a new one
@@ -104,15 +114,12 @@ fn watch(args: Args) -> notify::Result<()> {
     let debug = env::var("EFI_DBG").is_ok();
 
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(2)).unwrap();
-
-    if !debug {
-        watcher.watch("/boot", RecursiveMode::Recursive).expect("Error in watching directory");
-    } else {
-        watcher.watch("/home/rehan/Downloads/test", RecursiveMode::Recursive).expect("Error in watching directory");
-    }
     let format = args.format.expect("Missing argument: format");
     let bootnum = args.bootnum.expect("Missing argument: bootnum");
     let command = args.command.expect("Missing argument: command");
+    let kernel_dir = args.kernel_dir.expect("Missing argument: kernel-dir");
+
+    watcher.watch(kernel_dir, RecursiveMode::Recursive).expect("Error in watching directory");
 
     loop {
         match rx.recv() {

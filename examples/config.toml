@@ -1,3 +1,4 @@
 command = "efibootmgr --disk /dev/sda --part 5 --create --label 'Void Linux' --loader /EFI/void/vmlinuz-%v --unicode 'root=UUID=ijb2i344-40bb-48k7-780k-63g9342d2394 ro loglevel=4 slub_debug=P page_poison=1 resume=UUID=a8342483-8876-3j41-0nan-00u377jbb78e initrd=\EFI\void\initramfs-%v.img' --verbose"
 bootnum = "0015"
 format = "vmlinuz-%v"
+kernel-dir = "/boot"
