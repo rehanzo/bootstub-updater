@@ -16,7 +16,7 @@ use glob::glob;
 mod version;
 
 #[derive(StructOpt, Serialize, Deserialize, Clone, Debug)]
-#[structopt(about = "Updates efibootstub when linux kernel is updated")]
+#[structopt(about = "A utility to facilitate the maintenance of your EFI bootstub.")]
 struct Args {
     #[structopt(
         short,
