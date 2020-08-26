@@ -42,6 +42,7 @@ yay -S bootstub-updater
 
 ## Usage
 Before anything, figure out the command to create an efibootstub that boots your current kernel. Instructions can be found [here](https://wiki.archlinux.org/index.php/EFISTUB).
+**NOTE: The program requires administrative privilages**
 
 ### Command Line
   * **-c, --command \<COMMAND>**\
