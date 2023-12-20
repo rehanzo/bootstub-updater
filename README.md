@@ -28,7 +28,6 @@ For those using Arch Linux you can find the package on the AUR [here](https://au
 ```
 yay -S bootstub-updater
 ```
-**Looking for maintainer for the AUR package. Email me at rehanalirana@tuta.io if you are interested.**
 
 ### Manual
   1. Download the latest binary from the [releases](https://github.com/RAR27/bootstub-updater/releases) page
